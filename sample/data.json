@@ -1,0 +1,62 @@
+[
+  {
+    "username": "john_doe",
+    "email": "john.doe@example.com",
+    "password": "hashed_password_123",
+    "role": "user"
+  },
+  {
+    "username": "jane_admin",
+    "email": "jane.admin@example.com",
+    "password": "hashed_password_456",
+    "role": "admin"
+  },
+  {
+    "username": "michael_smith",
+    "email": "michael.smith@example.com",
+    "password": "hashed_password_789",
+    "role": "user"
+  },
+  {
+    "username": "emily_jones",
+    "email": "emily.jones@example.com",
+    "password": "hashed_password_abc",
+    "role": "user"
+  },
+  {
+    "username": "chris_brown",
+    "email": "chris.brown@example.com",
+    "password": "hashed_password_def",
+    "role": "user"
+  },
+  {
+    "username": "sarah_wilson",
+    "email": "sarah.wilson@example.com",
+    "password": "hashed_password_ghi",
+    "role": "admin"
+  },
+  {
+    "username": "daniel_clark",
+    "email": "daniel.clark@example.com",
+    "password": "hashed_password_jkl",
+    "role": "user"
+  },
+  {
+    "username": "laura_martin",
+    "email": "laura.martin@example.com",
+    "password": "hashed_password_mno",
+    "role": "user"
+  },
+  {
+    "username": "robert_lee",
+    "email": "robert.lee@example.com",
+    "password": "hashed_password_pqr",
+    "role": "user"
+  },
+  {
+    "username": "linda_white",
+    "email": "linda.white@example.com",
+    "password": "hashed_password_stu",
+    "role": "user"
+  }
+]

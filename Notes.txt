@@ -1,0 +1,276 @@
+Register username email password confirm login role user/admin
+Difference in Authorization and Authentication
+Once registered login, login and password
+Create cookie to hold Authentication information
+If authenticated then go to home page
+Only admin can access the special page
+
+web whiteboard.com
+
+Hashing using bcryptjs // Stoeres hasehd passwords
+
+jsonwebtoken
+
+The developer will pass the accesstoken in middleware to routes and allows them to check whether the user is authenticated or not.
+How we can use multiple handlers, how we can protect routes, use middelwares, create tokens, hash passwords, role based authentications.
+
+
+// File Upload
+Using multer and cloudinary node sdk 
+
+Cloudinary Node SDK - The Cloudinary Node SDK allows you to quickly and easily integrate your application with Cloudinary. Effortlessly optimize, transform, upload and manage your cloud's assets. npm i cloudinary  https://www.npmjs.com/package/cloudinary
+Key Features
+Transform and optimize assets.
+Generate image and video tags.
+Asset Management.
+Secure URLs.
+Cloudinary is a powerful media API for websites and mobile apps alike, Cloudinary enables developers to efficiently manage, transform, optimize, and deliver images and videos through multiple CDNs. Ultimately, viewers enjoy responsive and personalized visual-media experiences—irrespective of the viewing device.
+
+
+Multer Build Status Test Coverage NPM version js-standard-style
+Multer is a node.js middleware for handling multipart/form-data, which is primarily used for uploading files. It is written on top of busboy for maximum efficiency.
+
+NOTE: Multer will not process any form which is not multipart (multipart/form-data).
+
+Usage
+Multer adds a body object and a file or files object to the request object. The body object contains the values of the text fields of the form, the file or files object contains the files uploaded via the form.
+
+Basic usage example:
+
+Don't forget the enctype="multipart/form-data" in your form. Documentation on https://www.npmjs.com/package/multer
+
+Decide what are the properties that you will have in the file or video upload schema
+In frontent suppose a form for uploding in image. You select an image and cloudninary is called and it is in backend, asset is uploaded in cloudinary and it will give you image url and public id and asset it.
+
+const mongoose = require("mongoose");
+
+const ImageSchema = new mongoose.Schema(
+  {
+    url: {
+      required: true,
+    },
+    publicId: {
+      type: String,
+      required: true,
+    },
+    uploadedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+    },
+    createdAt: {
+      type: Date,
+      default: Date.now,
+    },
+  },
+  { timestamps: true }
+);
+
+module.exports = mongoose.model("Image", ImageSchema);
+
+
+// Cloudinary Setup
+npm i cloudinary
+Copy The API key and important Credentials from Product Environment Credentials
+
+import { v2 as cloudinary } from 'cloudinary';
+
+(async function() {
+
+    // Configuration
+    cloudinary.config({ 
+        cloud_name: '', 
+        api_key: '<your api key>', 
+        api_secret: '<your_api_secret>' // Click 'View API Keys' above to copy your API secret
+    });
+    
+    // Upload an image
+     const uploadResult = await cloudinary.uploader
+       .upload(
+           'https://res.cloudinary.com/demo/image/upload/getting-started/shoes.jpg', {
+               public_id: 'shoes',
+           }
+       )
+       .catch((error) => {
+           console.log(error);
+       });
+    
+    console.log(uploadResult);
+    
+    // Optimize delivery by resizing and applying auto-format and auto-quality
+    const optimizeUrl = cloudinary.url('shoes', {
+        fetch_format: 'auto',
+        quality: 'auto'
+    });
+    
+    console.log(optimizeUrl);
+    
+    // Transform the image: auto-crop to square aspect_ratio
+    const autoCropUrl = cloudinary.url('shoes', {
+        crop: 'auto',
+        gravity: 'auto',
+        width: 500,
+        height: 500,
+    });
+    
+    console.log(autoCropUrl);    
+})();
+
+Image is first uploaded to cloudninary storage
+
+const cloudinary = require("cloudinary").v2;
+
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
+
+module.exports = cloudinary;
+
+
+const Image = require("../models/Image");
+const { uploadToCloudinary } = require("../helpers/helper-cloudinary");
+
+const uploadImage = async (req, res) => {
+  // The request will contain the file data
+
+  try {
+    // Check if the file is miising in request object
+    if (!req.file) {
+      return res.statuus(400).json({
+        success: false,
+        message: "File is missing and is required. Please upload an image.",
+      });
+    }
+
+    // Upload the file to cloudinary
+    const { url, publicId } = await uploadToCloudinary(req.file.path);
+
+    // Store the image url and public id along with other information
+    const newImageToUpload = new Image({
+      url,
+      publicId,
+      uploadedBy: req.userInfo.userId,
+      createdAt: Date.now(),
+    });
+
+    // Save the image to database
+    await newImageToUpload.save();
+
+    res.status(201).json({
+      success: true,
+      message: "Image uploaded successfully!",
+      image: newImageToUpload,
+    });
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({
+      success: false,
+      message: "Error occurred while uploading image! Please try again.",
+    });
+  }
+};
+
+module.exports = { uploadImage };
+
+
+npm i multer
+
+DiskStorage
+The disk storage engine gives you full control on storing files to disk.
+
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, '/tmp/my-uploads')
+  },
+  filename: function (req, file, cb) {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9)
+    cb(null, file.fieldname + '-' + uniqueSuffix)
+  }
+})
+
+const upload = multer({ storage: storage })
+
+const multer = require("multer");
+const path = require("path");
+
+// Set Our Multer Storage
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, path.join(__dirname, "../uploads/images"));
+  },
+  filename: function (req, file, cb) {
+    const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
+    const extension = path.extname(file.originalname);
+    cb(null, file.fieldname + "-" + uniqueSuffix + extension);
+  },
+});
+
+// File Filter Function
+const fileFilter = (req, res, cb) => {
+  if (file.mimetype.startsWith("image")) {
+    cb(null, true);
+  } else {
+    cb(new Error("Only images are allowed!"), false);
+  }
+};
+
+// Initialize Our Multer Upload
+const upload = multer({
+  storage: storage,
+  limits: {
+    fileSize: 1024 * 1024 * 5, // 5MB
+  },
+  fileFilter: fileFilter,
+});
+
+
+const express = require("express");
+const router = express.Router();
+
+// Middlewares to protect the routes
+const authMiddleware = require("../middlewares/auth-middleware");
+const adminMiddleware = require("../middlewares/admin-middleware");
+
+// Third Party Middleware -> Multer is a node.js middleware for handling multipart/form-data, store your image locally
+const imageUploadMiddleware = require("../middlewares/image-upload-middleware");
+
+// Use Image Controller
+const { uploadImageController } = require("../controllers/image-controller");
+
+// Endpoint to Upload the Image
+router.post(
+  "/upload",
+  authMiddleware,
+  adminMiddleware,
+  imageUploadMiddleware.single("image"),
+  uploadImageController
+);
+
+// Endpoint To Get All Uploaded Images
+
+module.exports = router;
+
+
+
+
+const cloudinary = require("../config/config-cloudinary.js");
+
+const uploadToCloudinary = async (filePath) => {
+  try {
+    // Upload an Image
+
+    const uploadResult = await cloudinary.uploader.upload(filePath);
+
+    return {
+      url: uploadResult.secure_url,
+      publicId: uploadResult.public_id,
+    };
+  } catch (error) {
+    console.error("Error occurred while uploading to Cloudinary:", error);
+    throw new Error("Error occurred while uploading to Cloudinary.");
+  }
+};
+
+module.exports = { uploadToCloudinary };
