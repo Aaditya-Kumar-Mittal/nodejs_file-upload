@@ -1,5 +1,6 @@
 const Image = require("../models/Image");
 const { uploadToCloudinary } = require("../helpers/helper-cloudinary");
+const fs = require("fs");
 
 const uploadImageController = async (req, res) => {
   // The request will contain the file data
@@ -27,6 +28,11 @@ const uploadImageController = async (req, res) => {
     // Save the image to database
     await newImageToUpload.save();
 
+    /*
+    // Delete the file from Local Storage
+    fs.unlinkSync(req.file.path);
+    */
+
     return res.status(201).json({
       success: true,
       message: "Image uploaded successfully!",
@@ -41,4 +47,23 @@ const uploadImageController = async (req, res) => {
   }
 };
 
-module.exports = { uploadImageController };
+const fetchImagesController = async (req, res) => {
+  try {
+    // Only authenticated users can access this route
+    const images = await Image.find({}).select("url");
+
+    return res.status(200).json({
+      success: true,
+      message: "Images fetched successfully!",
+      images,
+    });
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({
+      success: false,
+      message: "Error occurred while fetching images! Please try again.",
+    });
+  }
+};
+
+module.exports = { uploadImageController, fetchImagesController };
