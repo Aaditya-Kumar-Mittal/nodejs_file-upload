@@ -8,8 +8,11 @@ const adminMiddleware = require("../middlewares/admin-middleware");
 // Third Party Middleware -> Multer is a node.js middleware for handling multipart/form-data, store your image locally
 const imageUploadMiddleware = require("../middlewares/image-upload-middleware");
 
-// Use Image Controller
-const { uploadImageController } = require("../controllers/image-controller");
+// Use Image Controllers
+const {
+  uploadImageController,
+  fetchImagesController,
+} = require("../controllers/image-controller");
 
 // Endpoint to Upload the Image
 router.post(
@@ -21,5 +24,6 @@ router.post(
 );
 
 // Endpoint To Get All Uploaded Images
+router.get("/fetchImages", authMiddleware, fetchImagesController);
 
 module.exports = router;
