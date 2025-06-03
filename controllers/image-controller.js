@@ -1,6 +1,7 @@
 const Image = require("../models/Image");
 const { uploadToCloudinary } = require("../helpers/helper-cloudinary");
 const fs = require("fs");
+const cloudinary = require("../config/config-cloudinary");
 
 const uploadImageController = async (req, res) => {
   // The request will contain the file data
@@ -66,4 +67,60 @@ const fetchImagesController = async (req, res) => {
   }
 };
 
-module.exports = { uploadImageController, fetchImagesController };
+// Delete Image controller
+const deleteImageConrtroller = async (req, res) => {
+  /**
+   * Understand which image to delete (imageId) -->
+   * Get the userId to check who uploaded the image -->
+   * Check if the user deleting the image is the one who uploaded it or not.
+   * Delete first from cloudinary and then delete it from database
+   */
+
+  try {
+    // Get Current Id of Image
+    const getIdOfImageToDelete = req.params.id;
+
+    const userId = req.userInfo.userId;
+
+    const image = await Image.findById(getIdOfImageToDelete);
+
+    if (!image) {
+      return res.status(404).json({
+        success: false,
+        message: "Image not found!",
+      });
+    }
+
+    // Check if the user who is deleting the image is the one who uploaded it
+    if (image.uploadedBy.toString() !== userId) {
+      // Some other user is trying to delete the image.
+
+      return res.status(403).json({
+        success: false,
+        message: "You are not authorized to delete this image!",
+      });
+    }
+
+    // Delete the image from cloudinary
+    await cloudinary.uploader.destroy(image.publicId);
+
+    // Delete the image from database
+    await Image.findByIdAndDelete(getIdOfImageToDelete);
+
+    return res.status(200).json({
+      success: true,
+      message: "Image deleted successfully!",
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: `Error occurred while deleting the image ${error.message}`,
+    });
+  }
+};
+
+module.exports = {
+  uploadImageController,
+  fetchImagesController,
+  deleteImageConrtroller,
+};

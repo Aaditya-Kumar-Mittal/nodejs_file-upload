@@ -102,7 +102,67 @@ const loginUser = async (req, res) => {
   }
 };
 
+// Change Password Controller
+
+const changePassword = async (req, res) => {
+  try {
+    // Get the user id, need to be autheticated first
+    const userId = req.userInfo.userId;
+
+    // Extract old and new password, perform the validations in (frontend itself)
+    const { oldPassword, newPassword } = req.body;
+
+    // Define the current login user
+    const user = await User.findById(userId);
+
+    // If doesnot exit in database, return error
+    if (!user) {
+      return res.status(400).json({
+        success: false,
+        message: "User not found!",
+      });
+    }
+
+    // Check if the old password is correct or not
+    const checkPasswordMatch = await bcryptjs.compare(
+      oldPassword,
+      user.password
+    );
+
+    if (!checkPasswordMatch) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "Incorrect old password. Kindly enter the correct credentials.",
+      });
+    }
+
+    // Hash the new Password
+    const salt = await bcryptjs.genSalt(10);
+    const hashedPassword = await bcryptjs.hash(newPassword, salt);
+
+    // Update the user password
+    user.password = hashedPassword;
+
+    await user.save();
+
+    return res.status(200).json({
+      success: true,
+      message: "Password changed successfully!",
+    });
+
+
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({
+      success: false,
+      message: "Some error occurred! Please try again.",
+    });
+  }
+};
+
 module.exports = {
   registerUser,
   loginUser,
+  changePassword,
 };
