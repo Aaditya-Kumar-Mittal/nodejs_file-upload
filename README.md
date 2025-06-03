@@ -2,7 +2,7 @@
 
 ## 🛡️ Technology Stack
 
-![Node.js](https://img.shields.io/badge/Node.js-green?style=for-the-badge&logo=node.js&logoColor=white&label=Platform) ![Express.js](https://img.shields.io/badge/Express.js-lightgreen?style=for-the-badge&logo=express&logoColor=black&label=Framework) ![Postman](https://img.shields.io/badge/Postman-orange?style=for-the-badge&logo=postman&logoColor=white&label=Tool) ![JavaScript](https://img.shields.io/badge/JavaScript-FFF44F?style=for-the-badge&logo=javascript&logoColor=black&label=Language) ![MongoDB](https://img.shields.io/badge/MongoDB-darkgreen?style=for-the-badge&logo=mongodb&logoColor=white&label=Database) ![Cloudinary](https://img.shields.io/badge/Cloudinary-0033CC?style=for-the-badge&logo=cloudinary&logoColor=white&label=Image%20Storage) ![JWT](https://img.shields.io/badge/JWT-7F00FF?style=for-the-badge&logo=jsonwebtokens&logoColor=white&label=Authentication) ![bcrypt](https://img.shields.io/badge/bcrypt-FF69B4?style=for-the-badge&logo=lock&logoColor=white&label=Passwords)
+![Node.js](https://img.shields.io/badge/Node.js-green?style=for-the-badge&logo=node.js&logoColor=green&label=Platform) ![Express.js](https://img.shields.io/badge/Express.js-lightgreen?style=for-the-badge&logo=express&logoColor=lightgreen&label=Framework) ![Postman](https://img.shields.io/badge/Postman-orange?style=for-the-badge&logo=postman&logoColor=orangee&label=Tool) ![JavaScript](https://img.shields.io/badge/JavaScript-FFF44F?style=for-the-badge&logo=javascript&logoColor=FFF44F&label=Language) ![MongoDB](https://img.shields.io/badge/MongoDB-darkgreen?style=for-the-badge&logo=mongodb&logoColor=darkgreen&label=Database) ![Cloudinary](https://img.shields.io/badge/Cloudinary-0033CC?style=for-the-badge&logo=cloudinary&logoColor=0033CC&label=Image%20Storage) ![JWT](https://img.shields.io/badge/JWT-7F00FF?style=for-the-badge&logo=jsonwebtokens&logoColor=white&label=Authentication) ![bcrypt](https://img.shields.io/badge/bcrypt-FF69B4?style=for-the-badge&logo=lock&logoColor=white&label=Passwords)
 
 ## 📑 Table of Contents
 
@@ -17,6 +17,16 @@
   - [🔐 Authentication Flow](#-authentication-flow)
   - [🛡️ Authorization Flow](#️-authorization-flow)
   - [📤 File Upload with Multer \& Cloudinary](#-file-upload-with-multer--cloudinary)
+  - [📄 Pagination in Image Fetching](#-pagination-in-image-fetching)
+    - [🛠️ Implementation Details](#️-implementation-details)
+      - [📥 Controller Function: `fetchImagesController`](#-controller-function-fetchimagescontroller)
+    - [🔍 Query Parameters](#-query-parameters)
+    - [📊 Example Usage](#-example-usage)
+      - [🔗 Request](#-request)
+      - [📥 Response](#-response)
+    - [🧪 Testing with Postman](#-testing-with-postman)
+    - [📈 Benefits of Pagination](#-benefits-of-pagination)
+    - [🔄 Alternative: Infinite Scrolling](#-alternative-infinite-scrolling)
   - [📦 Installation \& Run Locally](#-installation--run-locally)
   - [📄 License](#-license)
 
@@ -38,14 +48,17 @@ It serves as a solid foundation for any project requiring secure login, authenti
 
 ## 🚀 Features
 
-- 🔐 User Registration with password hashing using `bcryptjs`.
-- 🔑 User Login with access token generation using `jsonwebtoken`.
-- 📥 Middleware for token verification and protected routes.
-- 👮 Role-based access control (admin/user).
-- 🧱 Secure token-based authentication.
-- 🧪 Tested using Postman.
-- ⚙️ Environment configuration using `.env`.
-- 📤 File upload functionality using `Multer` and `Cloudinary`.
+- 🔐 **User Registration** with password hashing using `bcryptjs`.
+- 🔑 **User Login** with secure access token generation using `jsonwebtoken`.
+- 🧱 **Token-Based Authentication** for securing API routes and managing sessions.
+- 📥 **Middleware for Token Verification** to protect sensitive routes.
+- 👮 **Role-Based Access Control** for `admin` and `user` level permissions.
+- 🔄 **Change Password Functionality** with secure validation and `bcryptjs` re-hashing.
+- 🧾 **Pagination Support** for efficient image fetching with `page`, `limit`, `sortBy`, and `sortOrder` query params.
+- ❌ **Delete Image Feature** with secure removal from both **Cloudinary** and the database.
+- 📤 **File Upload** using `Multer` for multipart data and `Cloudinary` for cloud media storage.
+- ⚙️ **Environment Configuration** using `.env` file to securely store secrets and API keys.
+- 🧪 **API Testing** using **Postman** with various test cases for authentication, uploads, and pagination.
 
 ---
 
@@ -269,6 +282,126 @@ nodejs_authentication-authorization/
 
    module.exports = router;
    ```
+
+---
+
+## 📄 Pagination in Image Fetching
+
+Pagination is essential for efficiently managing large datasets by dividing them into manageable chunks. In this project, we've implemented pagination for the image fetching functionality, allowing users to retrieve images page by page, enhancing performance and user experience.
+
+### 🛠️ Implementation Details
+
+#### 📥 Controller Function: `fetchImagesController`
+
+```javascript
+const fetchImagesController = async (req, res) => {
+  try {
+    // Extract query parameters with default values
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 3;
+    const sortBy = req.query.sortBy || "createdAt";
+    const sortOrder = req.query.sortOrder === "asc" ? 1 : -1;
+
+    // Calculate the number of documents to skip
+    const skip = (page - 1) * limit;
+
+    // Count total number of images
+    const totalImages = await Image.countDocuments({});
+
+    // Calculate total number of pages
+    const totalPages = Math.ceil(totalImages / limit);
+
+    // Construct sort object dynamically
+    const sortObject = { [sortBy]: sortOrder };
+
+    // Fetch images with pagination and sorting
+    const images = await Image.find().sort(sortObject).skip(skip).limit(limit);
+
+    // Respond with paginated data
+    return res.status(200).json({
+      success: true,
+      currentPage: page,
+      totalPages: totalPages,
+      totalImages: totalImages,
+      message: "Images fetched successfully!",
+      data: images,
+    });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({
+      success: false,
+      message: "Error occurred while fetching images! Please try again.",
+    });
+  }
+};
+```
+
+### 🔍 Query Parameters
+
+| Parameter   | Type   | Default     | Description                                                         |
+| ----------- | ------ | ----------- | ------------------------------------------------------------------- |
+| `page`      | Number | `1`         | The current page number to retrieve.                                |
+| `limit`     | Number | `3`         | The number of images to display per page.                           |
+| `sortBy`    | String | `createdAt` | The field by which to sort the images.                              |
+| `sortOrder` | String | `desc`      | The order of sorting: `asc` for ascending or `desc` for descending. |
+
+### 📊 Example Usage
+
+#### 🔗 Request
+
+```api
+GET /api/images?page=2&limit=5&sortBy=createdAt&sortOrder=asc
+```
+
+#### 📥 Response
+
+```json
+{
+  "success": true,
+  "currentPage": 2,
+  "totalPages": 4,
+  "totalImages": 20,
+  "message": "Images fetched successfully!",
+  "data": [
+    {
+      "_id": "60d21b4667d0d8992e610c85",
+      "url": "https://res.cloudinary.com/demo/image/upload/v1624444444/sample.jpg",
+      "publicId": "sample",
+      "uploadedBy": "60d0fe4f5311236168a109ca",
+      "createdAt": "2021-06-24T14:00:00.000Z",
+      "updatedAt": "2021-06-24T14:00:00.000Z"
+    }
+    // More image objects...
+  ]
+}
+```
+
+---
+
+### 🧪 Testing with Postman
+
+To test the pagination functionality:
+
+1. Open Postman.
+2. Create a new `GET` request to `http://localhost:3000/api/images`.
+3. Add query parameters:
+
+   - `page`: The page number you want to retrieve.
+   - `limit`: The number of images per page.
+   - `sortBy`: The field to sort by (e.g., `createdAt`).
+   - `sortOrder`: The order of sorting (`asc` or `desc`).
+
+4. Send the request and observe the paginated response.
+
+### 📈 Benefits of Pagination
+
+- **Performance Optimization**: Reduces the amount of data transferred in a single request, leading to faster response times.
+- **Improved User Experience**: Allows users to navigate through data easily without overwhelming them with too much information at once.
+- **Scalability**: Efficiently handles large datasets by loading data in chunks.
+
+### 🔄 Alternative: Infinite Scrolling
+
+Instead of traditional pagination, infinite scrolling loads more data as the user scrolls down the page. This approach provides a seamless user experience, especially in applications like social media feeds. However, it can be more complex to implement and may lead to performance issues if not handled properly.
 
 ---
 
